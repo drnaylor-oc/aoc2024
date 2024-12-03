@@ -1,5 +1,5 @@
 [package]
-name = "aoc2025"
+name = "aoc2024"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,6 @@ edition = "2021"
 clap = { version = "4.5.21", features = ["derive"] }
 itertools = "0.13.0"
 lazy_static = "1.5.0"
-once_cell = "1.20.2"
 rstest = "0.23.0"
 sorted-vec = "0.8.5"
 regex = "1.11.1"

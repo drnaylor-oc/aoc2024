@@ -29,7 +29,7 @@ fn main() -> ExitCode {
     let args = Args::parse();
 
     let days_to_run: Vec<u8> = if args.all {
-        available_days.keys().map(u8::clone).collect_vec()
+        available_days.keys().map(u8::clone).sorted().collect_vec()
     } else {
         args.days
     };
