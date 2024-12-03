@@ -68,6 +68,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "once_cell",
+ "regex",
  "rstest",
  "sorted-vec",
 ]

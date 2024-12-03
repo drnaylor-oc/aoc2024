@@ -1,5 +1,6 @@
 use crate::day01::Day01;
 use crate::day02::Day02;
+use crate::day03::Day03;
 use clap::Parser;
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -9,6 +10,7 @@ use crate::util::Errors;
 mod util;
 mod day01;
 mod day02;
+mod day03;
 
 trait Day {
     fn part_1(&self) -> Result<String, Errors>;
@@ -21,6 +23,7 @@ fn main() -> ExitCode {
     let available_days: HashMap<u8, Box<dyn Day>> = HashMap::from([
         (1u8, Day01::create_day()),
         (2u8, Day02::create_day()),
+        (3u8, Day03::create_day()),
     ]);
 
     let args = Args::parse();

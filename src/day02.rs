@@ -1,6 +1,4 @@
 use std::collections::HashSet;
-use std::ops::Add;
-use clap::builder::TypedValueParser;
 use itertools::Itertools;
 use crate::Day;
 use crate::day02::Direction::{Decreasing, Increasing, NotStarted};
