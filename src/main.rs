@@ -1,12 +1,14 @@
 use crate::day01::Day01;
+use crate::day02::Day02;
 use clap::Parser;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::process::ExitCode;
 use crate::util::Errors;
 
-mod day01;
 mod util;
+mod day01;
+mod day02;
 
 trait Day {
     fn part_1(&self) -> Result<String, Errors>;
@@ -17,7 +19,8 @@ trait Day {
 #[allow(unstable_name_collisions)]
 fn main() -> ExitCode {
     let available_days: HashMap<u8, Box<dyn Day>> = HashMap::from([
-        (1u8, Day01::create_day())
+        (1u8, Day01::create_day()),
+        (2u8, Day02::create_day()),
     ]);
 
     let args = Args::parse();
