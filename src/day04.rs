@@ -1,9 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::str::Lines;
-use itertools::Itertools;
 use crate::Day;
 use crate::util::{load_from, Errors};
-use crate::util::Errors::NoImplementationError;
 
 pub struct Day04 {}
 
@@ -11,13 +9,17 @@ impl Day for Day04 {
     fn part_1(&self) -> Result<String, Errors> {
         let file = load_from("day04a.txt");
         let grid = parse_grid(file.lines());
-        let start_points = find_all_x(&grid);
+        let start_points = find_all(&Xmas::X, &grid);
         let result = check_all_points(&start_points, &grid);
         Ok(format!("{}", result))
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        Err(NoImplementationError)
+        let file = load_from("day04a.txt");
+        let grid = parse_grid(file.lines());
+        let start_points = find_all(&Xmas::A, &grid);
+        let result = check_all_x_pairs(&start_points, &grid);
+        Ok(format!("{}", result))
     }
 
     fn create_day() -> Box<dyn Day> where Self: Sized {
@@ -60,12 +62,12 @@ impl Direction {
 
     fn coords(&self, start: (usize, usize)) -> Option<[(usize, usize); 3]> {
         match *self {
-            Direction::Up => if (start.0 > 2) {
+            Direction::Up => if start.0 > 2 {
                 Some([(start.0 - 1, start.1), (start.0 - 2, start.1), (start.0 - 3, start.1)])
             } else {
                 None
             },
-            Direction::UpRight => if (start.0 > 2) {
+            Direction::UpRight => if start.0 > 2 {
                 Some([(start.0 - 1, start.1 + 1), (start.0 - 2, start.1 + 2), (start.0 - 3, start.1 + 3)])
             } else {
                 None
@@ -73,22 +75,46 @@ impl Direction {
             Direction::Right => Some([(start.0, start.1 + 1), (start.0, start.1 + 2), (start.0, start.1 + 3)]),
             Direction::DownRight => Some([(start.0 + 1, start.1 + 1), (start.0 + 2, start.1 + 2), (start.0 + 3, start.1 + 3)]),
             Direction::Down => Some([(start.0 + 1, start.1), (start.0 + 2, start.1), (start.0 + 3, start.1)]),
-            Direction::DownLeft => if (start.1 > 2) {
+            Direction::DownLeft => if start.1 > 2 {
                 Some([(start.0 + 1, start.1 - 1), (start.0 + 2, start.1 - 2), (start.0 + 3, start.1 - 3)])
             } else {
                 None
             },
-            Direction::Left => if (start.1 > 2) {
+            Direction::Left => if start.1 > 2 {
                 Some([(start.0, start.1 - 1), (start.0, start.1 - 2), (start.0, start.1 - 3)])
             } else {
                 None
             },
-            Direction::UpLeft => if (start.0 > 2 && start.1 > 2) {
+            Direction::UpLeft => if start.0 > 2 && start.1 > 2 {
                 Some([(start.0 - 1, start.1 - 1), (start.0 - 2, start.1 - 2), (start.0 - 3, start.1 - 3)])
             } else {
                 None
             },
         }
+    }
+}
+
+fn x_pairs(start: &(usize, usize)) -> Option<[[(usize, usize); 2]; 2]> {
+    if start.0 > 0 && start.1 > 0 {
+        Some([
+            [(start.0 - 1, start.1 - 1), (start.0 + 1, start.1 + 1)],
+            [(start.0 - 1, start.1 + 1), (start.0 + 1, start.1 - 1)]
+        ])
+    } else {
+        None
+    }
+}
+
+fn check_x_pair(pairs: &[[(usize, usize); 2]; 2], grid: &XmasMap) -> bool {
+    let [[first_first, first_second], [second_first, second_second]] = *pairs;
+    check_m_and_s(first_first, first_second, grid) && check_m_and_s(second_first, second_second, grid)
+}
+
+fn check_m_and_s(first: (usize, usize), second: (usize, usize), grid: &XmasMap) -> bool {
+    match grid.get(&first) {
+        Some(Xmas::M) => grid.get(&second) == Some(&Xmas::S),
+        Some(Xmas::S) => grid.get(&second) == Some(&Xmas::M),
+        _ => false
     }
 }
 
@@ -119,9 +145,9 @@ fn parse_grid(lines: Lines) -> XmasMap {
     map
 }
 
-fn find_all_x(map: &XmasMap) -> HashSet<(usize, usize)> {
+fn find_all(marker: &Xmas, map: &XmasMap) -> HashSet<(usize, usize)> {
     map.iter().filter_map(|((x, y), xmas)| {
-        if *xmas == Xmas::X {
+        if *xmas == *marker {
             Some((*x, *y))
         } else {
             None
@@ -144,12 +170,16 @@ fn check_all_points(start_points: &HashSet<(usize, usize)>, grid: &XmasMap) -> u
     start_points.iter().map(|x| test_for_xmas(*x, grid)).sum()
 }
 
+fn check_all_x_pairs(start_points: &HashSet<(usize, usize)>, grid: &XmasMap) -> usize {
+    start_points.iter().filter_map(x_pairs).filter(|x| check_x_pair(x, grid)).count()
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{HashMap, HashSet};
     use lazy_static::lazy_static;
     use rstest::rstest;
-    use crate::day04::{find_all_x, parse_grid, Xmas, XmasMap};
+    use crate::day04::{check_all_x_pairs, find_all, parse_grid, x_pairs, check_x_pair, Xmas, XmasMap};
 
     const TEST_GRID: &str = "MMMSXXMASM\n\
                              MSAMXMSMSA\n\
@@ -163,10 +193,10 @@ mod tests {
                              MXMXAXMASX";
 
     const TEST_GRID_PARSE: &str = "MMMSX\n\
-                             MSAMX\n\
-                             AMXSX\n\
-                             MSAMA\n\
-                             XMASA";
+                                   MSAMX\n\
+                                   AMXSX\n\
+                                   MSAMA\n\
+                                   XMASA";
 
     lazy_static! {
         static ref MAPPED_GRID: XmasMap = HashMap::from(
@@ -223,18 +253,60 @@ mod tests {
     #[case(Xmas::S, Xmas::A, false, true)]
     #[case(Xmas::S, Xmas::S, false, false)]
     fn test_order(#[case] first: Xmas, #[case] second: Xmas, #[case] first_is_less_than: bool, #[case] first_is_greater_than: bool) {
-        assert_eq!(first < second, first_is_less_than)
+        assert_eq!(first < second, first_is_less_than);
+        assert_eq!(first > second, first_is_greater_than);
     }
 
     #[test]
-    fn test_find_all_x() {
-        assert_eq!(find_all_x(&*MAPPED_GRID), HashSet::from([
+    fn test_find_all_for_x() {
+        assert_eq!(find_all(&Xmas::X, &*MAPPED_GRID), HashSet::from([
             (0, 4),
             (1, 4),
             (2, 2),
             (2, 4),
             (4, 0),
         ]))
+    }
+
+    #[test]
+    fn test_find_all_for_a() {
+        assert_eq!(find_all(&Xmas::A, &*MAPPED_GRID), HashSet::from([
+            (1, 2),
+            (2, 0),
+            (3, 2),
+            (3, 4),
+            (4, 2),
+            (4, 4),
+        ]))
+    }
+
+    #[rstest]
+    #[case((0, 0), None)]
+    #[case((0, 1), None)]
+    #[case((1, 0), None)]
+    #[case((1, 1), Some([[(0, 0), (2, 2)], [(0, 2), (2, 0)]]))]
+    fn test_x_pairs(#[case] start: (usize, usize), #[case] expected: Option<[[(usize, usize); 2]; 2]>) {
+        assert_eq!(x_pairs(&start), expected)
+    }
+
+    #[rstest]
+    #[case((1, 2), true)]
+    #[case((1, 1), false)]
+    fn test_mas_check(#[case] start: (usize, usize), #[case] expected: bool) {
+        if let Some(pairs) = x_pairs(&start) {
+            assert_eq!(check_x_pair(&pairs, &*MAPPED_GRID), expected)
+        } else {
+            panic!("We shouldn't be testing x_pairs")
+        }
+
+    }
+
+    #[test]
+    fn test_part2() {
+        let grid = parse_grid(TEST_GRID.lines());
+        let start_points = find_all(&Xmas::A, &grid);
+        let result = check_all_x_pairs(&start_points, &grid);
+        assert_eq!(result, 9)
     }
 
 }
