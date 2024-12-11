@@ -5,12 +5,14 @@ use clap::Parser;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::process::ExitCode;
+use crate::day04::Day04;
 use crate::util::Errors;
 
 mod util;
 mod day01;
 mod day02;
 mod day03;
+mod day04;
 
 trait Day {
     fn part_1(&self) -> Result<String, Errors>;
@@ -24,6 +26,7 @@ fn main() -> ExitCode {
         (1u8, Day01::create_day()),
         (2u8, Day02::create_day()),
         (3u8, Day03::create_day()),
+        (4u8, Day04::create_day()),
     ]);
 
     let args = Args::parse();
