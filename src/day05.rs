@@ -1,10 +1,8 @@
-use crate::util::Errors::NoImplementationError;
 use crate::util::{load_from, Errors};
 use crate::Day;
 use core::str::Lines;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
-use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 

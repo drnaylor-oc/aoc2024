@@ -132,7 +132,7 @@ fn place_obstacles_and_walk(original_state: &State<HashMap<Coord, Vec<Direction>
     // If we detect a loop, we count it.
     // We do not place an item on the first square
     let mut count: usize = 0;
-    for (coord, direction) in original_state.visited.iter().filter(|(c, d)| **c != original_state.original_pos) {
+    for (coord, direction) in original_state.visited.iter().filter(|(c, _)| **c != original_state.original_pos) {
         // create the obstacle.
         let mut new_state = original_state.get_reset();
         new_state.obstacles.insert(coord.clone());
