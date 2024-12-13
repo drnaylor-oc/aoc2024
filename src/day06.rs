@@ -1,8 +1,7 @@
-use std::collections::{HashMap, HashSet};
-use std::str::Lines;
-use crate::util::Errors::NoImplementationError;
 use crate::util::{load_from, Errors};
 use crate::Day;
+use std::collections::{HashMap, HashSet};
+use std::str::Lines;
 
 pub struct Day06 {}
 
@@ -102,17 +101,17 @@ impl Recorder for State<HashSet<Coord>> {
     }
 }
 
-impl Recorder for State<HashMap<Coord, HashSet<Direction>>> {
+impl Recorder for State<HashMap<Coord, Vec<Direction>>> {
     fn record_visit(&mut self, position: &Coord, direction: &Direction) -> bool {
         if let Some(result) = self.visited.get_mut(position) {
             if result.contains(direction) {
                 true
             } else {
-                result.insert(direction.clone());
+                result.push(direction.clone());
                 false
             }
         } else {
-            self.visited.insert(position.clone(), HashSet::from([direction.clone()]));
+            self.visited.insert(position.clone(), vec![direction.clone()]);
             false
         }
     }
@@ -121,22 +120,25 @@ impl Recorder for State<HashMap<Coord, HashSet<Direction>>> {
         State {
             position: self.original_pos.clone(),
             direction: self.original_direction.clone(),
-            visited: HashMap::from([(self.original_pos.clone(), HashSet::from([self.original_direction.clone()]))]),
+            visited: HashMap::from([(self.original_pos.clone(), vec![self.original_direction.clone()])]),
             ..self.clone()
         }
     }
 }
 
-fn place_obstacles_and_walk(original_state: &State<HashMap<Coord, HashSet<Direction>>>) -> usize {
+fn place_obstacles_and_walk(original_state: &State<HashMap<Coord, Vec<Direction>>>) -> usize {
     // If we're only placing ONE obstacle, then it has to be somewhere on the original path.
     // So, with our original path, we place an item on each square and see what happens.
     // If we detect a loop, we count it.
     // We do not place an item on the first square
     let mut count: usize = 0;
-    for coord in original_state.visited.keys().filter(|x| **x != original_state.original_pos) {
+    for (coord, direction) in original_state.visited.iter().filter(|(c, d)| **c != original_state.original_pos) {
         // create the obstacle.
         let mut new_state = original_state.get_reset();
         new_state.obstacles.insert(coord.clone());
+        // We only walk from the point we first encounter this block.
+        new_state.position = direction[0].back_one(coord);
+        new_state.direction = direction[0].clone();
         if new_state.walk() == ExitCondition::Loop {
             count += 1;
         }
@@ -163,6 +165,15 @@ impl Direction {
         }
     }
 
+    fn back_one(&self, current: &Coord) -> Coord {
+        match self {
+            Direction::North => (current.0 + 1, current.1),
+            Direction::East => (current.0, current.1 - 1),
+            Direction::South => (current.0 - 1, current.1),
+            Direction::West => (current.0, current.1 + 1)
+        }
+    }
+
     fn rotate(&self) -> Direction {
         match self {
             Direction::North => Direction::East,
@@ -177,8 +188,8 @@ fn create_visited_set(coord: &Coord) -> HashSet<Coord> {
     HashSet::from([coord.clone()])
 }
 
-fn create_visited_map(coord: &Coord) -> HashMap<Coord, HashSet<Direction>> {
-    HashMap::from([(coord.clone(), HashSet::from([Direction::North]))])
+fn create_visited_map(coord: &Coord) -> HashMap<Coord, Vec<Direction>> {
+    HashMap::from([(coord.clone(), vec![Direction::North])])
 }
 
 fn parse_grid<T, F>(lines: Lines, create: F) -> State<T> where F: Fn(&Coord) -> T, T: Clone {
@@ -204,10 +215,10 @@ fn parse_grid<T, F>(lines: Lines, create: F) -> State<T> where F: Fn(&Coord) -> 
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use crate::day06::{create_visited_map, create_visited_set, parse_grid, place_obstacles_and_walk, Coord, Direction, ExitCondition, Recorder, State};
     use lazy_static::lazy_static;
     use rstest::rstest;
-    use crate::day06::{create_visited_map, create_visited_set, parse_grid, place_obstacles_and_walk, Coord, Direction, ExitCondition, Recorder, State};
+    use std::collections::{HashMap, HashSet};
 
     const TEST_GRID: &str = "....#.....\n\
                              .........#\n\
@@ -241,10 +252,10 @@ mod tests {
             cols: 10
         };
 
-        static ref TEST_DIRECTION_STATE: State<HashMap<Coord, HashSet<Direction>>> = State {
+        static ref TEST_DIRECTION_STATE: State<HashMap<Coord, Vec<Direction>>> = State {
             position: (6, 4),
             original_pos: (6, 4),
-            visited: HashMap::from([((6, 4), HashSet::from([Direction::North]))]),
+            visited: HashMap::from([((6, 4), vec![Direction::North])]),
             direction: Direction::North,
             original_direction: Direction::North,
             obstacles: HashSet::from([
