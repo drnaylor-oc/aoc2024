@@ -15,7 +15,10 @@ impl Day for Day06 {
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        Err(NoImplementationError)
+        let data = load_from("day06a.txt");
+        let mut state = parse_grid(data.lines(), create_visited_map);
+        state.walk();
+        Ok(place_obstacles_and_walk(&state).to_string())
     }
 
     fn create_day() -> Box<dyn Day> where Self: Sized {
@@ -124,6 +127,23 @@ impl Recorder for State<HashMap<Coord, HashSet<Direction>>> {
     }
 }
 
+fn place_obstacles_and_walk(original_state: &State<HashMap<Coord, HashSet<Direction>>>) -> usize {
+    // If we're only placing ONE obstacle, then it has to be somewhere on the original path.
+    // So, with our original path, we place an item on each square and see what happens.
+    // If we detect a loop, we count it.
+    // We do not place an item on the first square
+    let mut count: usize = 0;
+    for coord in original_state.visited.keys().filter(|x| **x != original_state.original_pos) {
+        // create the obstacle.
+        let mut new_state = original_state.get_reset();
+        new_state.obstacles.insert(coord.clone());
+        if new_state.walk() == ExitCondition::Loop {
+            count += 1;
+        }
+    }
+    count
+}
+
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 enum Direction {
@@ -187,7 +207,7 @@ mod tests {
     use std::collections::{HashMap, HashSet};
     use lazy_static::lazy_static;
     use rstest::rstest;
-    use crate::day06::{create_visited_map, create_visited_set, parse_grid, Coord, Direction, ExitCondition, Recorder, State};
+    use crate::day06::{create_visited_map, create_visited_set, parse_grid, place_obstacles_and_walk, Coord, Direction, ExitCondition, Recorder, State};
 
     const TEST_GRID: &str = "....#.....\n\
                              .........#\n\
@@ -283,19 +303,29 @@ mod tests {
         assert_eq!(parse_grid(TEST_GRID.lines(), create_visited_map), *TEST_DIRECTION_STATE);
     }
 
-    #[rstest]
+    #[test]
     fn test_walk() {
         let mut state = (*TEST_STATE).clone();
         assert_eq!(state.walk(), ExitCondition::Grid);
         assert_eq!(state.visited.len(), 41);
     }
 
-    #[rstest]
+    #[test]
     fn test_walk_map() {
         let mut state = (*TEST_DIRECTION_STATE).clone();
         state.walk();
         assert_eq!(state.walk(), ExitCondition::Grid);
         assert_eq!(state.visited.len(), 41);
+    }
+
+    #[test]
+    fn test_walk_new_obs() {
+        let mut state = (*TEST_DIRECTION_STATE).clone();
+        state.walk();
+        assert_eq!(state.walk(), ExitCondition::Grid);
+        assert_eq!(state.visited.len(), 41);
+
+        assert_eq!(place_obstacles_and_walk(&state), 6)
     }
 
 }
