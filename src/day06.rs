@@ -1,17 +1,16 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::str::Lines;
 use crate::util::Errors::NoImplementationError;
 use crate::util::{load_from, Errors};
 use crate::Day;
-use itertools::Itertools;
 
 pub struct Day06 {}
 
 impl Day for Day06 {
     fn part_1(&self) -> Result<String, Errors> {
         let data = load_from("day06a.txt");
-        let mut state = parse_grid(data.lines());
-        walk(&mut state);
+        let mut state = parse_grid(data.lines(), create_visited_set);
+        state.walk();
         Ok(state.visited.len().to_string())
     }
 
@@ -29,16 +28,104 @@ impl Day for Day06 {
 type Coord = (isize, isize);
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-struct State {
+struct State<T> where T: Clone {
+    original_pos: Coord,
+    original_direction: Direction,
     position: Coord,
     direction: Direction,
-    visited: HashSet<Coord>,
+    visited: T,
     obstacles: HashSet<Coord>,
     rows: usize,
     cols: usize
 }
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
+enum ExitCondition {
+    Loop,
+    Grid
+}
+
+trait Recorder {
+    /// Records a visit, returning true if the visit has been seen before (position and direction)
+    ///
+    /// If no direction is recorded, always returns false
+    fn record_visit(&mut self, position: &Coord, direction: &Direction) -> bool;
+
+    fn get_reset(&self) -> Self;
+}
+
+impl<T> State<T> where State<T>: Recorder, T: Clone {
+
+    /// Walks around, ending when either:
+    /// * a loop is detected (when the next move results in a location and position we've ended up in before), or
+    /// * the guard moves out of the grid
+    ///
+    pub fn walk(&mut self) -> ExitCondition {
+        loop {
+            let proposed = self.direction.step(&self.position);
+            // if we are in row or col -1, or beyond the last row or column (in row or col 130 in my input), we've left.
+            if proposed.0 >= 0 && proposed.1 >= 0 && proposed.0 < self.rows as isize && proposed.1 < self.cols as isize {
+                if self.obstacles.contains(&proposed) {
+                    // discard proposed move, rotate 90 deg to right
+                    self.direction = self.direction.rotate();
+                } else {
+                    // confirm move, insert step into tracking set
+                    self.position = proposed;
+                    let direction  = &self.direction.clone();
+                    if self.record_visit(&proposed, direction) {
+                        return ExitCondition::Loop;
+                    }
+                }
+            } else {
+                return ExitCondition::Grid;
+            }
+        }
+    }
+}
+
+impl Recorder for State<HashSet<Coord>> {
+    fn record_visit(&mut self, position: &Coord, _: &Direction) -> bool {
+        self.visited.insert(position.clone());
+        false
+    }
+
+    fn get_reset(&self) -> Self {
+        State {
+            position: self.original_pos.clone(),
+            direction: self.original_direction.clone(),
+            visited: HashSet::from([self.original_pos.clone()]),
+            ..self.clone()
+        }
+    }
+}
+
+impl Recorder for State<HashMap<Coord, HashSet<Direction>>> {
+    fn record_visit(&mut self, position: &Coord, direction: &Direction) -> bool {
+        if let Some(result) = self.visited.get_mut(position) {
+            if result.contains(direction) {
+                true
+            } else {
+                result.insert(direction.clone());
+                false
+            }
+        } else {
+            self.visited.insert(position.clone(), HashSet::from([direction.clone()]));
+            false
+        }
+    }
+
+    fn get_reset(&self) -> Self {
+        State {
+            position: self.original_pos.clone(),
+            direction: self.original_direction.clone(),
+            visited: HashMap::from([(self.original_pos.clone(), HashSet::from([self.original_direction.clone()]))]),
+            ..self.clone()
+        }
+    }
+}
+
+
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 enum Direction {
     North,
     East,
@@ -66,26 +153,15 @@ impl Direction {
     }
 }
 
-fn walk(state: &mut State) {
-    loop {
-        let proposed = state.direction.step(&state.position);
-        // if we are in row or col -1, or beyond the last row or column (in row or col 130 in my input), we've left.
-        if proposed.0 >= 0 && proposed.1 >= 0 && proposed.0 < state.rows as isize && proposed.1 < state.cols as isize {
-            if state.obstacles.contains(&proposed) {
-                // discard proposed move, rotate 90 deg to right
-                state.direction = state.direction.rotate();
-            } else {
-                // confirm move, insert step into tracking set
-                state.position = proposed;
-                state.visited.insert(proposed.clone());
-            }
-        } else {
-            break;
-        }
-    }
+fn create_visited_set(coord: &Coord) -> HashSet<Coord> {
+    HashSet::from([coord.clone()])
 }
 
-fn parse_grid(lines: Lines) -> State {
+fn create_visited_map(coord: &Coord) -> HashMap<Coord, HashSet<Direction>> {
+    HashMap::from([(coord.clone(), HashSet::from([Direction::North]))])
+}
+
+fn parse_grid<T, F>(lines: Lines, create: F) -> State<T> where F: Fn(&Coord) -> T, T: Clone {
     let mut rows: usize = 0;
     let mut cols: usize = 0;
     let mut obstacles: HashSet<Coord> = HashSet::new();
@@ -102,15 +178,16 @@ fn parse_grid(lines: Lines) -> State {
         }
         rows += 1;
     }
-    State { position, direction: Direction::North, obstacles, visited: HashSet::from([position.clone()]), rows, cols }
+    let v = create(&position);
+    State { original_pos: position.clone(), original_direction: Direction::North, position, direction: Direction::North, obstacles, visited: v, rows, cols }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::collections::{HashMap, HashSet};
     use lazy_static::lazy_static;
     use rstest::rstest;
-    use crate::day06::{parse_grid, walk, Coord, Direction, State};
+    use crate::day06::{create_visited_map, create_visited_set, parse_grid, Coord, Direction, ExitCondition, Recorder, State};
 
     const TEST_GRID: &str = "....#.....\n\
                              .........#\n\
@@ -124,10 +201,32 @@ mod tests {
                              ......#...";
 
     lazy_static! {
-        static ref TEST_STATE: State = State {
+        static ref TEST_STATE: State<HashSet<Coord>> = State {
             position: (6, 4),
+            original_pos: (6, 4),
             visited: HashSet::from([(6, 4)]),
             direction: Direction::North,
+            original_direction: Direction::North,
+            obstacles: HashSet::from([
+                (0, 4),
+                (1, 9),
+                (3, 2),
+                (4, 7),
+                (6, 1),
+                (7, 8),
+                (8, 0),
+                (9, 6)
+            ]),
+            rows: 10,
+            cols: 10
+        };
+
+        static ref TEST_DIRECTION_STATE: State<HashMap<Coord, HashSet<Direction>>> = State {
+            position: (6, 4),
+            original_pos: (6, 4),
+            visited: HashMap::from([((6, 4), HashSet::from([Direction::North]))]),
+            direction: Direction::North,
+            original_direction: Direction::North,
             obstacles: HashSet::from([
                 (0, 4),
                 (1, 9),
@@ -175,14 +274,27 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_grid() {
-        assert_eq!(parse_grid(TEST_GRID.lines()), *TEST_STATE);
+    fn test_parse_grid_set() {
+        assert_eq!(parse_grid(TEST_GRID.lines(), create_visited_set), *TEST_STATE);
     }
 
     #[test]
+    fn test_parse_grid_map() {
+        assert_eq!(parse_grid(TEST_GRID.lines(), create_visited_map), *TEST_DIRECTION_STATE);
+    }
+
+    #[rstest]
     fn test_walk() {
         let mut state = (*TEST_STATE).clone();
-        walk(&mut state);
+        assert_eq!(state.walk(), ExitCondition::Grid);
+        assert_eq!(state.visited.len(), 41);
+    }
+
+    #[rstest]
+    fn test_walk_map() {
+        let mut state = (*TEST_DIRECTION_STATE).clone();
+        state.walk();
+        assert_eq!(state.walk(), ExitCondition::Grid);
         assert_eq!(state.visited.len(), 41);
     }
 
