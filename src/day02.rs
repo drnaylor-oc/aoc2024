@@ -8,13 +8,13 @@ pub struct Day02 {}
 
 impl Day for Day02 {
     fn part_1(&self) -> Result<String, Errors> {
-        let file = load_from("day02a.txt");
+        let file = load_from("day02a.txt")?;
         let lines = parse_lines(file.as_str());
         Ok(lines.iter().map(|x| is_safe(x, 1)).filter(|x| *x).count().to_string())
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        let file = load_from("day02a.txt");
+        let file = load_from("day02a.txt")?;
         let lines = parse_lines(file.as_str());
         Ok(lines.iter().map(|x| is_safe(x, 2)).filter(|x| *x).count().to_string())
     }

@@ -7,14 +7,14 @@ pub struct Day06 {}
 
 impl Day for Day06 {
     fn part_1(&self) -> Result<String, Errors> {
-        let data = load_from("day06a.txt");
+        let data = load_from("day06a.txt")?;
         let mut state = parse_grid(data.lines(), create_visited_set);
         state.walk();
         Ok(state.visited.len().to_string())
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        let data = load_from("day06a.txt");
+        let data = load_from("day06a.txt")?;
         let mut state = parse_grid(data.lines(), create_visited_map);
         state.walk();
         Ok(place_obstacles_and_walk(&state).to_string())

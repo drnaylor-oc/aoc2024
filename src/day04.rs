@@ -7,7 +7,7 @@ pub struct Day04 {}
 
 impl Day for Day04 {
     fn part_1(&self) -> Result<String, Errors> {
-        let file = load_from("day04a.txt");
+        let file = load_from("day04a.txt")?;
         let grid = parse_grid(file.lines());
         let start_points = find_all(&Xmas::X, &grid);
         let result = check_all_points(&start_points, &grid);
@@ -15,7 +15,7 @@ impl Day for Day04 {
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        let file = load_from("day04a.txt");
+        let file = load_from("day04a.txt")?;
         let grid = parse_grid(file.lines());
         let start_points = find_all(&Xmas::A, &grid);
         let result = check_all_x_pairs(&start_points, &grid);

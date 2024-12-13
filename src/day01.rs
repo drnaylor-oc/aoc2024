@@ -7,13 +7,13 @@ pub struct Day01 {}
 
 impl Day for Day01 {
     fn part_1(&self) -> Result<String, Errors> {
-        let file = load_from("day01a.txt");
+        let file = load_from("day01a.txt")?;
         let (first, second) = create_lists(file);
         Ok(format!("{}", get_distance_sum(first, second)))
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        let file = load_from("day01a.txt");
+        let file = load_from("day01a.txt")?;
         let (first, second) = create_lists_unsorted(file);
         Ok(format!("{}", count_lists(first, second)))
     }

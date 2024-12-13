@@ -10,7 +10,7 @@ pub struct Day05 {}
 
 impl Day for Day05 {
     fn part_1(&self) -> Result<String, Errors> {
-        let text = load_from("day05a.txt");
+        let text = load_from("day05a.txt")?;
         let mut lines = text.lines();
         let ordering = parse_ordering(&mut lines);
         let updates = parse_update(&mut lines);
@@ -19,7 +19,7 @@ impl Day for Day05 {
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        let text = load_from("day05a.txt");
+        let text = load_from("day05a.txt")?;
         let mut lines = text.lines();
         let ordering = parse_ordering(&mut lines);
         // we only want lines that are not valid.

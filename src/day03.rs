@@ -7,14 +7,14 @@ pub struct Day03 {}
 
 impl Day for Day03 {
     fn part_1(&self) -> Result<String, Errors> {
-        let file = load_from("day03a.txt");
+        let file = load_from("day03a.txt")?;
         let couples = scan_string(file.as_str());
         let result = mul_sum(&couples);
         Ok(result.to_string())
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        let file = load_from("day03a.txt");
+        let file = load_from("day03a.txt")?;
         let ins = scan_enable_string(file.as_str());
         let result = mul_sum_enable(&ins);
         Ok(result.to_string())
