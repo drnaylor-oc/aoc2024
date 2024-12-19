@@ -8,6 +8,7 @@ use std::process::ExitCode;
 use crate::day04::Day04;
 use crate::day05::Day05;
 use crate::day06::Day06;
+use crate::day07::Day07;
 use crate::util::Errors;
 
 mod util;
@@ -17,6 +18,7 @@ mod day03;
 mod day04;
 mod day05;
 mod day06;
+mod day07;
 
 trait Day {
     fn part_1(&self) -> Result<String, Errors>;
@@ -33,6 +35,7 @@ fn main() -> ExitCode {
         (4u8, Day04::create_day()),
         (5u8, Day05::create_day()),
         (6u8, Day06::create_day()),
+        (7u8, Day07::create_day()),
     ]);
 
     let args = Args::parse();
