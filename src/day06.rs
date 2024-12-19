@@ -215,7 +215,7 @@ fn parse_grid<T, F>(lines: Lines, create: F) -> State<T> where F: Fn(&Coord) -> 
 
 #[cfg(test)]
 mod tests {
-    use crate::day06::{create_visited_map, create_visited_set, parse_grid, place_obstacles_and_walk, Coord, Direction, ExitCondition, Recorder, State};
+    use crate::day06::{create_visited_map, create_visited_set, parse_grid, place_obstacles_and_walk, Coord, Direction, ExitCondition, State};
     use lazy_static::lazy_static;
     use rstest::rstest;
     use std::collections::{HashMap, HashSet};
