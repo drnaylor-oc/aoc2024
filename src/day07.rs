@@ -49,7 +49,7 @@ fn operate(current_state: Vec<usize>, values: &[usize], expected: usize, with_co
                 [
                     evaluate_valid(val + next, expected),
                     evaluate_valid(val * next, expected),
-                    if with_concatenation { Some(concat_digits(*val, next)) } else { None }
+                    if with_concatenation { evaluate_valid(concat_digits(*val, next), expected) } else { None }
                 ]
                     .iter()
                     .filter_map(|x| *x)
