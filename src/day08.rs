@@ -1,4 +1,3 @@
-use crate::util::Errors::NoImplementationError;
 use crate::util::{load_from, Errors};
 use crate::Day;
 use core::str::Lines;
@@ -11,19 +10,23 @@ type Coord = (isize, isize);
 
 impl Day for Day08 {
     fn part_1(&self) -> Result<String, Errors> {
-        let str = load_from("day08a.txt")?;
-        let (map, row_max, col_max) = parse_lines(str.lines());
-        let antinodes = collect_antinodes(part_1_antinodes, &map, row_max, col_max);
-        Ok(antinodes.len().to_string())
+        run(part_1_antinodes)
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        Err(NoImplementationError)
+        run(part_2_antinodes)
     }
 
     fn create_day() -> Box<dyn Day> where Self: Sized {
         Box::new(Day08 {})
     }
+}
+
+fn run(func: AntinodeFn) -> Result<String, Errors> {
+    let str = load_from("day08a.txt")?;
+    let (map, row_max, col_max) = parse_lines(str.lines());
+    let antinodes = collect_antinodes(func, &map, row_max, col_max);
+    Ok(antinodes.len().to_string())
 }
 
 fn parse_lines(line: Lines) -> (HashMap<char, Vec<Coord>>, isize, isize) {
@@ -77,6 +80,31 @@ fn part_1_antinodes(first: &Coord, second: &Coord, row_max: isize, col_max: isiz
     ].iter().filter(|x| check_in_map(x, row_max, col_max)).cloned().collect()
 }
 
+fn part_2_antinodes(first: &Coord, second: &Coord, row_max: isize, col_max: isize) -> Vec<Coord> {
+    let col_step: isize = second.1 - first.1;
+    let row_step: isize = second.0 - first.0;
+    let mut antinodes = vec![second.clone()];
+    while let Some(next) = get_next_node(antinodes.last().unwrap(), row_step, col_step, row_max, col_max) {
+        antinodes.push(next);
+    }
+
+    antinodes.push(first.clone());
+    while let Some(next) = get_next_node(antinodes.last().unwrap(), -row_step, -col_step, row_max, col_max) {
+        antinodes.push(next);
+    }
+
+    antinodes
+}
+
+fn get_next_node(current: &Coord, row_step: isize, col_step: isize, row_max: isize, col_max: isize) -> Option<Coord> {
+    let next = (current.0 + row_step, current.1 + col_step);
+    if check_in_map(&next, row_max, col_max) {
+        Some(next)
+    } else {
+        None
+    }
+}
+
 fn check_in_map(coord: &Coord, row_max: isize, col_max: isize) -> bool {
     coord.0 >= 0 && coord.1 >= 0 && coord.0 < row_max && coord.1 < col_max
 }
@@ -90,9 +118,10 @@ fn collect_antinodes(func: AntinodeFn, all_antennas: &HashMap<char, Vec<Coord>>,
 #[cfg(test)]
 mod tests {
     use std::collections::{HashMap, HashSet};
+    use itertools::Itertools;
     use lazy_static::lazy_static;
     use rstest::rstest;
-    use crate::day08::{collect_antinodes, find_antinodes_for_antenna, parse_lines, part_1_antinodes, Coord};
+    use crate::day08::{collect_antinodes, find_antinodes_for_antenna, parse_lines, part_1_antinodes, part_2_antinodes, Coord};
 
     const TEST_INPUT: &str = "............\n\
                               ........0...\n\
@@ -129,11 +158,78 @@ mod tests {
         assert_eq!(find_antinodes_for_antenna(part_1_antinodes,&(TEST_PARSED)[&key], 12, 12), expected);
     }
 
+    #[rstest]
+    #[case('A', HashSet::from([
+        (0, 0),
+        (1, 1),
+        (2, 2),
+        (3, 3),
+        (4, 4),
+        (5, 5),
+        (6, 6),
+        (7, 7),
+        (8, 8),
+        (9, 9),
+        (10, 10),
+        (11, 11),
+        (1, 3),
+        (2, 4),
+        (5, 6),
+        (11, 10),
+    ]))]
+    // #[case('0', HashSet::from([(0, 6), (0, 11), (1, 3), (2, 10), (3, 2), (4, 9), (5, 1), (5, 6), (6, 3), (7, 0)]))]
+    fn test_find_antinodes_for_antenna_pt2(#[case] key: char, #[case] expected: HashSet<Coord>) {
+        assert_eq!(find_antinodes_for_antenna(part_2_antinodes,&(TEST_PARSED)[&key], 12, 12), expected);
+    }
+
     #[test]
     fn test_collect_antinodes() {
         assert_eq!(
             collect_antinodes(part_1_antinodes, &*TEST_PARSED, 12, 12),
             HashSet::from([(1, 3), (2, 4), (7, 7), (10, 10), (11, 10), (0, 6), (0, 11), (1, 3), (2, 10), (3, 2), (4, 9), (5, 1), (5, 6), (6, 3), (7, 0)])
+        )
+    }
+
+    #[test]
+    fn test_collect_antinodes_2() {
+        assert_eq!(
+            collect_antinodes(part_2_antinodes, &*TEST_PARSED, 12, 12).iter().sorted().collect_vec(),
+            vec![
+                (0, 0),
+                (0, 1),
+                (0, 6),
+                (0, 11),
+                (1, 1),
+                (1, 3),
+                (1, 8),
+                (2, 2),
+                (2, 4),
+                (2, 5),
+                (2, 10),
+                (3, 2),
+                (3, 3),
+                (3, 7),
+                (4, 4),
+                (4, 9),
+                (5, 1),
+                (5, 5),
+                (5, 6),
+                (5, 11),
+                (6, 3),
+                (6, 6),
+                (7, 0),
+                (7, 5),
+                (7, 7),
+                (8, 2),
+                (8, 8),
+                (9, 4),
+                (9, 9),
+                (10, 1),
+                (10, 10),
+                (11, 3),
+                (11, 10),
+                (11, 11)
+            ].iter().sorted().collect_vec()
         )
     }
 
