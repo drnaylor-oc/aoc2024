@@ -1,6 +1,6 @@
+use crate::util::Errors::FileLoadFailed;
 use std::fs;
 use std::path::Path;
-use crate::util::Errors::FileLoadFailed;
 
 pub fn load_from(filename: &str) -> Result<String, Errors> {
     let path = format!("data{}{}", std::path::MAIN_SEPARATOR, filename);
