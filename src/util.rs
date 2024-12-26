@@ -12,6 +12,7 @@ pub fn load_from(filename: &str) -> Result<String, Errors> {
 #[allow(dead_code)]
 pub enum Errors {
     FileLoadFailed(std::io::Error),
-    NoImplementationError
+    NoImplementationError,
+    BadResult(String)
 }
 
