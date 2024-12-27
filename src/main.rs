@@ -11,6 +11,7 @@ use crate::day06::Day06;
 use crate::day07::Day07;
 use crate::day08::Day08;
 use crate::day09::Day09;
+use crate::day10::Day10;
 use crate::util::Errors;
 
 mod util;
@@ -23,6 +24,7 @@ mod day06;
 mod day07;
 mod day08;
 mod day09;
+mod day10;
 
 trait Day {
     fn part_1(&self) -> Result<String, Errors>;
@@ -42,6 +44,7 @@ fn main() -> ExitCode {
         (7u8, Day07::create_day()),
         (8u8, Day08::create_day()),
         (9u8, Day09::create_day()),
+        (10u8, Day10::create_day()),
     ]);
 
     let args = Args::parse();
