@@ -12,12 +12,19 @@ impl Day for Day10 {
         let file = load_from("day10a.txt")?;
         let map = parse_map(&file);
         let ends = find_end_trailheads(&map);
-        let count = count_scores(&ends);
+        let keys: Vec<HashSet<(usize, usize)>> = ends.iter()
+            .map(|x| x.keys().map(|x| *x).collect())
+            .collect_vec();
+        let count = count_scores(&keys);
         Ok(count.to_string())
     }
 
     fn part_2(&self) -> Result<String, Errors> {
-        Err(NoImplementationError)
+        let file = load_from("day10a.txt")?;
+        let map = parse_map(&file);
+        let ends = find_end_trailheads(&map);
+        let count = ends.iter().map(|x| x.values().sum::<usize>()).sum::<usize>();
+        Ok(count.to_string())
     }
 
     fn create_day() -> Box<dyn Day> where Self: Sized {
@@ -29,16 +36,30 @@ fn count_scores(heads: &Vec<HashSet<(usize, usize)>>) -> usize {
     heads.iter().map(|x| x.len()).sum()
 }
 
-fn find_end_trailheads(map: &HashMap<(usize, usize), u8>) -> Vec<HashSet<(usize, usize)>> {
+fn find_end_trailheads(map: &HashMap<(usize, usize), u8>) -> Vec<HashMap<(usize, usize), usize>> {
     map.iter()
         .filter(|(_, &v)| v == 0)
-        .map(|(&c, _)| walk_trail(map, HashSet::from([c]), 1))
+        .map(|(&c, _)| walk_trail(map, HashMap::from([(c, 1)]), 1))
         .collect()
 }
 
+fn count_rankings(map: &Vec<HashMap<(usize, usize), usize>>) -> usize {
+    map.iter()
+        .map(|x| x.iter()
+            .map(|(_, &paths)| paths)
+            .sum::<usize>()
+        )
+        .sum()
+}
+
 #[tailcall]
-fn walk_trail(map: &HashMap<(usize, usize), u8>, current_coords: HashSet<(usize, usize)>, next_step: u8) -> HashSet<(usize, usize)> {
-    let new_coords: HashSet<(usize, usize)> = current_coords.iter().flat_map(|&x| next(x, next_step, map)).collect();
+fn walk_trail(map: &HashMap<(usize, usize), u8>, current_coords: HashMap<(usize, usize), usize>, next_step: u8) -> HashMap<(usize, usize), usize> {
+    let mut new_coords = HashMap::new();
+    for (coord, paths) in current_coords {
+        for i in next(coord, next_step, map) {
+            *new_coords.entry(i).or_default() += paths;
+        }
+    }
     if new_coords.is_empty() || next_step == 9 {
         new_coords
     } else {
@@ -46,19 +67,19 @@ fn walk_trail(map: &HashMap<(usize, usize), u8>, current_coords: HashSet<(usize,
     }
 }
 
-fn next(current_loc: (usize, usize), next_id: u8, map: &HashMap<(usize, usize), u8>) -> HashSet<(usize, usize)> {
-    let mut next_trailhead: HashSet<(usize, usize)> = HashSet::new();
+fn next(current_loc: (usize, usize), next_id: u8, map: &HashMap<(usize, usize), u8>) -> Vec<(usize, usize)> {
+    let mut next_trailhead: Vec<(usize, usize)> = vec![];
     if let Some(r) = current_loc.0.checked_sub(1).iter().filter_map(|x| is_next((*x, current_loc.1), next_id, map)).next() {
-        next_trailhead.insert(r);
+        next_trailhead.push(r);
     }
     if let Some(r) = is_next((current_loc.0 + 1, current_loc.1), next_id, map) {
-        next_trailhead.insert(r);
+        next_trailhead.push(r);
     }
     if let Some(r) = current_loc.1.checked_sub(1).iter().filter_map(|y| is_next((current_loc.0, *y), next_id, map)).next() {
-        next_trailhead.insert(r);
+        next_trailhead.push(r);
     }
     if let Some(r) = is_next((current_loc.0, current_loc.1 + 1), next_id, map) {
-        next_trailhead.insert(r);
+        next_trailhead.push(r);
     }
     next_trailhead
 }
@@ -129,16 +150,16 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&TEST_MAP_1, 1, (0, 0), HashSet::from_iter([(1, 0), (0, 1)]))]
-    #[case(&TEST_MAP_1, 2, (0, 0), HashSet::new())]
-    fn test_next(#[case] map: &HashMap<(usize, usize), u8>, #[case] next_id: u8, #[case] coord: (usize, usize), #[case] expected: HashSet<(usize, usize)>) {
+    #[case(&TEST_MAP_1, 1, (0, 0), vec![(1, 0), (0, 1)])]
+    #[case(&TEST_MAP_1, 2, (0, 0), vec![])]
+    fn test_next(#[case] map: &HashMap<(usize, usize), u8>, #[case] next_id: u8, #[case] coord: (usize, usize), #[case] expected: Vec<(usize, usize)>) {
         assert_eq!(next(coord, next_id, map), expected);
     }
 
 
     #[rstest]
-    #[case(&TEST_MAP_1, vec![HashSet::from_iter([(3, 0)])])]
-    fn test_find_end_trailheads(#[case] map: &HashMap<(usize, usize), u8>, #[case] expected: Vec<HashSet<(usize, usize)>>) {
+    #[case(&TEST_MAP_1, vec![HashMap::from_iter([((3, 0), 16)])])]
+    fn test_find_end_trailheads(#[case] map: &HashMap<(usize, usize), u8>, #[case] expected: Vec<HashMap<(usize, usize), usize>>) {
         assert_eq!(find_end_trailheads(map), expected);
     }
 
