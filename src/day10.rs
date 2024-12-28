@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use crate::util::Errors::NoImplementationError;
 use crate::util::{load_from, Errors};
 use crate::Day;
 use itertools::Itertools;
@@ -85,7 +84,7 @@ fn next(current_loc: (usize, usize), next_id: u8, map: &HashMap<(usize, usize), 
 }
 
 fn is_next(coord: (usize, usize), next_id: u8, map: &HashMap<(usize, usize), u8>) -> Option<(usize, usize)> {
-    map.get(&coord).filter(|&&x| x == next_id).map(|x| coord)
+    map.get(&coord).filter(|&&x| x == next_id).map(|_| coord)
 }
 
 fn parse_map(input: &str) -> HashMap<(usize, usize), u8> {
