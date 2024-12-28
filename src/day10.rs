@@ -42,15 +42,6 @@ fn find_end_trailheads(map: &HashMap<(usize, usize), u8>) -> Vec<HashMap<(usize,
         .collect()
 }
 
-fn count_rankings(map: &Vec<HashMap<(usize, usize), usize>>) -> usize {
-    map.iter()
-        .map(|x| x.iter()
-            .map(|(_, &paths)| paths)
-            .sum::<usize>()
-        )
-        .sum()
-}
-
 #[tailcall]
 fn walk_trail(map: &HashMap<(usize, usize), u8>, current_coords: HashMap<(usize, usize), usize>, next_step: u8) -> HashMap<(usize, usize), usize> {
     let mut new_coords = HashMap::new();
@@ -110,14 +101,14 @@ mod tests {
                                 8765\n\
                                 9876";
 
-    const TEST_INPUT_2: &str = "89010123\n\
-                                78121874\n\
-                                87430965\n\
-                                96549874\n\
-                                45678903\n\
-                                32019012\n\
-                                01329801\n\
-                                10456732";
+    // const TEST_INPUT_2: &str = "89010123\n\
+    //                             78121874\n\
+    //                             87430965\n\
+    //                             96549874\n\
+    //                             45678903\n\
+    //                             32019012\n\
+    //                             01329801\n\
+    //                             10456732";
 
     lazy_static! {
         static ref TEST_MAP_1: HashMap<(usize, usize), u8> = HashMap::from([
